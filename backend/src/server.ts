@@ -11,10 +11,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 
 // Перевірка завантаження ключів при старті
 if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
-  console.error('❌ CRITICAL ERROR: JWT_SECRET or REFRESH_TOKEN_SECRET not found in .env file!');
   process.exit(1);
 } else {
-  console.log('✅ Env secrets loaded successfully.');
 }
 
 interface BigIntJSON {
@@ -220,25 +218,20 @@ app.post('/user/forgot-password', async (req: Request, res: Response): Promise<v
     // Нормалізуємо імейл до нижнього регістру, щоб уникнути проблем з регістром (DrVirus vs drvirus)
     email = email.toLowerCase().trim();
     
-    console.log(`\x1b[36m[Request]\x1b[0m Forgot password request for email: ${email}`);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      console.log(`\x1b[33m[Auth]\x1b[0m User ${email} not found in database. Returning 'Sent' for security.`);
       sendResponse(res, 200, { result: 'Sent' });
       return;
     }
-    console.log(`\x1b[32m[Auth]\x1b[0m User ${email} found. Generating token...`);
     const resetToken = jwt.sign({ userId: user.id.toString() }, JWT_SECRET, { expiresIn: '1h' });
     const expires = new Date(Date.now() + 60 * 60 * 1000);
     await prisma.user.update({
       where: { id: user.id },
       data: { resetToken, resetTokenExpires: expires },
     });
-    console.log(`\x1b[33m[Password Reset]\x1b[0m Email: ${email}, Token: ${resetToken}`);
     try {
       await sendResetEmail(email, resetToken);
     } catch (mailError) {
-      console.error('\x1b[31m[Mail Error]\x1b[0m Failed to send email:', mailError);
     }
     sendResponse(res, 200, { result: 'Sent' });
   } catch (e) {
@@ -314,23 +307,15 @@ app.post('/refresh', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.log('--- Refresh Request ---');
-    console.log('Token from request length:', refreshToken.length);
-
     const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { userId: string };
     const user = await prisma.user.findUnique({ where: { id: BigInt(decoded.userId) } });
 
     if (!user) {
-      console.log('User not found in DB for ID:', decoded.userId);
       sendError(res, 401, 'Unauthorized');
       return;
     }
 
-    console.log('Token from DB length:', user.refreshToken?.length);
-    console.log('Direct comparison:', user.refreshToken === refreshToken);
-
     if (user.refreshToken !== refreshToken) {
-      console.log('Mismatch detected!');
       sendError(res, 401, 'Unauthorized');
       return;
     }
@@ -345,7 +330,6 @@ app.post('/refresh', async (req: Request, res: Response): Promise<void> => {
 
     sendResponse(res, 200, { result: 'Authorized', token: newToken, refreshToken: newRefreshToken });
   } catch (err) {
-    console.error('JWT Verify Error:', err);
     sendError(res, 401, 'Unauthorized');
   }
 });
@@ -788,5 +772,4 @@ app.put('/board/:id/card/:cardId/users', async (req: Request, res: Response): Pr
 
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Server running on http://localhost:${port}`);
 });

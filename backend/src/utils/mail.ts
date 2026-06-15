@@ -1,11 +1,9 @@
 import { MailerSend } from 'mailersend';
 
 export const sendResetEmail = async (email: string, token: string) => {
-  console.log(`[Mail Service] Attempting to send reset email to: ${email}`);
   
   const apiKey = process.env.MAILERSEND_API_KEY;
   if (!apiKey) {
-    console.error('[Mail Service] Error: MAILERSEND_API_KEY is not defined in .env');
     throw new Error('MailerSend API key is missing');
   }
 
@@ -33,11 +31,8 @@ export const sendResetEmail = async (email: string, token: string) => {
 
   try {
     const response = await mailerSend.email.send(sentEmailParams);
-    console.log(`[Mail Service] Success! MailerSend response:`, response);
     return { result: 'Sent' };
   } catch (error: any) {
-    console.error('[Mail Service] MailerSend Error:');
-    console.error(error.response?.data || error.message || error);
     throw error;
   }
 };
