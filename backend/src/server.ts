@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-// import { sendResetEmail } from './utils/mail';
+import { sendResetEmail } from './utils/mail';
 
 import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
@@ -211,16 +211,23 @@ app.put('/user/password', authenticate, async (req: Request, res: Response): Pro
 
 app.post('/user/forgot-password', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email } = req.body as { email: string };
+    let { email } = req.body as { email: string };
     if (!email) {
       sendError(res, 400, 'Email is required');
       return;
     }
+    
+    // Нормалізуємо імейл до нижнього регістру, щоб уникнути проблем з регістром (DrVirus vs drvirus)
+    email = email.toLowerCase().trim();
+    
+    console.log(`\x1b[36m[Request]\x1b[0m Forgot password request for email: ${email}`);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
+      console.log(`\x1b[33m[Auth]\x1b[0m User ${email} not found in database. Returning 'Sent' for security.`);
       sendResponse(res, 200, { result: 'Sent' });
       return;
     }
+    console.log(`\x1b[32m[Auth]\x1b[0m User ${email} found. Generating token...`);
     const resetToken = jwt.sign({ userId: user.id.toString() }, JWT_SECRET, { expiresIn: '1h' });
     const expires = new Date(Date.now() + 60 * 60 * 1000);
     await prisma.user.update({
@@ -228,11 +235,11 @@ app.post('/user/forgot-password', async (req: Request, res: Response): Promise<v
       data: { resetToken, resetTokenExpires: expires },
     });
     console.log(`\x1b[33m[Password Reset]\x1b[0m Email: ${email}, Token: ${resetToken}`);
-    // try {
-    //   await sendResetEmail(email, resetToken);
-    // } catch (mailError) {
-    //   console.error('\x1b[31m[Mail Error]\x1b[0m Failed to send email:', mailError);
-    // }
+    try {
+      await sendResetEmail(email, resetToken);
+    } catch (mailError) {
+      console.error('\x1b[31m[Mail Error]\x1b[0m Failed to send email:', mailError);
+    }
     sendResponse(res, 200, { result: 'Sent' });
   } catch (e) {
     const error = e as Error;

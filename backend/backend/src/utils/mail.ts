@@ -1,20 +1,31 @@
-import { Resend } from 'resend';
+import { MailerSend, EmailParams, Sender } from 'mailersend';
 
 export const sendResetEmail = async (email: string, token: string) => {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const mailerSend = new MailerSend({
+    apiKey: process.env.MAILERSEND_API_KEY,
+  });
 
   const resetLink = `https://fullstack-anton.pp.ua/reset-password?token=${token}`;
-  
+
+  const sentEmailParams: EmailParams = {
+    from: {
+      email: 'mailings@test-51ndgwv9nkdlzqx8.mlsender.net',
+      name: 'Trello Clone',
+    },
+    to: [
+      {
+        email: email,
+      },
+    ],
+    subject: 'Відновлення пароля',
+    html: `<p>Ви запросили відновлення пароля. Використовуйте наступне посилання: <a href="${resetLink}">Відновити пароль</a></p><p>Якщо ви цього не робили, просто ігноруйте цей лист.</p>`,
+  };
+
   try {
-    const data = await resend.emails.send({
-      from: `Trello Clone <mailings@send.fullstack-anton.pp.ua>`,
-      to: [email],
-      subject: 'Відновлення пароля',
-      html: `<p>Ви запросили відновлення пароля. Використовуйте наступне посилання: <a href="${resetLink}">Відновити пароль</a></p><p>Якщо ви цього не робили, просто ігноруйте цей лист.</p>`,
-    });
-    return data;
+    await mailerSend.email.send(sentEmailParams);
+    return { result: 'Sent' };
   } catch (error) {
-    console.error('Resend Error:', error);
+    console.error('MailerSend Error:', error);
     throw error;
   }
 };
