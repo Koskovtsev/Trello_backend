@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { sendResetEmail } from './utils/mail';
 
 import path from 'path';
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 // Перевірка завантаження ключів при старті
 if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
@@ -771,5 +771,5 @@ app.put('/board/:id/card/:cardId/users', async (req: Request, res: Response): Pr
 });
 
 app.listen(port, () => {
-  // eslint-disable-next-line no-console
+  console.log(`Server is running on http://localhost:${port}`);
 });
