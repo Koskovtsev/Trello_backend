@@ -25,6 +25,7 @@ interface BigIntJSON {
 };
 
 export const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3001;
 
 const JWT_SECRET = process.env.JWT_SECRET!;
