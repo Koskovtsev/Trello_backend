@@ -9,8 +9,10 @@ A robust backend implementation for a project management tool, focusing on compl
 
 ### 2. Secure Authentication System
 * **JWT Architecture:** Implemented a full-cycle authentication system using **Access Tokens** (short-lived) and **Refresh Tokens** (long-lived).
+* **OAuth Integration:** Added support for social login (Google & GitHub) for seamless access.
 * **Security First:** Used **bcryptjs** for salted password hashing and secure token rotation to prevent unauthorized access.
 * **Middleware Protection:** Developed a custom authentication layer to protect sensitive routes and validate user permissions.
+* **Password Recovery:** Implemented a secure forgot/reset password flow with email verification.
 
 ### 3. API Design & Performance
 * **Prisma ORM:** Leveraged Prisma for type-safe database queries and efficient migrations.
@@ -21,7 +23,8 @@ A robust backend implementation for a project management tool, focusing on compl
 * **Runtime:** Node.js, TypeScript.
 * **Framework:** Express.js.
 * **Database:** PostgreSQL (via Neon), Prisma ORM.
-* **Security:** JSON Web Tokens (JWT), bcryptjs.
+* **Security:** JSON Web Tokens (JWT), bcryptjs, OAuth2 (Google/GitHub).
+* **Utils:** Mailer for password recovery, Deep Merge utility for custom metadata.
 * **Dev Tools:** ts-node, dotenv, ESLint.
 
 ## 🎯 Key Learnings

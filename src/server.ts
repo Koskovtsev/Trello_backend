@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { passport } from './authConfig';
 import { sendResetEmail } from './utils/mail';
 
 import path from 'path';
@@ -31,6 +32,13 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
+
+// Логгер для всіх запитів, щоб бачити, що приходить на сервер
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
 
 // Нормалізація шляхів: прибираємо кінцевий слеш, щоб /user/password/ працював як /user/password
 app.use((req, res, next) => {
@@ -51,6 +59,35 @@ const sendResponse = (res: Response, status: number, data: any) => {
 
 const sendError = (res: Response, status: number, message: string) => {
   sendResponse(res, status, { error: message });
+};
+
+const oauthLogin = (provider: 'google' | 'github') => {
+  return passport.authenticate(provider, { scope: provider === 'google' ? ['profile', 'email'] : ['user:email'] });
+};
+
+const oauthCallback = async (provider: 'google' | 'github', req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    if (!user) {
+      sendError(res, 401, 'OAuth authentication failed');
+      return;
+    }
+
+    const token = jwt.sign({ userId: user.id.toString() }, JWT_SECRET, { expiresIn: '5m' });
+    const refreshToken = jwt.sign({ userId: user.id.toString() }, REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    // Редирект на фронт з токенами в query-параметрах (використовуємо # для Hash Routing)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/#/auth/callback?token=${token}&refreshToken=${refreshToken}`);
+  } catch (e) {
+    const error = e as Error;
+    sendError(res, 500, error.message);
+  }
 };
 
 const authenticate = (req: Request, res: Response, next: NextFunction): void => {
@@ -133,6 +170,17 @@ const getParam = (param: unknown): unknown => {
   if (Array.isArray(param)) return param[0];
   return param !== undefined && param !== null ? param : '';
 }
+
+// OAuth routes
+app.get('/auth/google', oauthLogin('google'));
+app.get('/auth/google/callback', passport.authenticate('google', { session: false }), (req, res) => {
+  oauthCallback('google', req, res);
+});
+
+app.get('/auth/github', oauthLogin('github'));
+app.get('/auth/github/callback', passport.authenticate('github', { session: false }), (req, res) => {
+  oauthCallback('github', req, res);
+});
 
 app.post('/user', async (req: Request, res: Response): Promise<void> => {
   try {

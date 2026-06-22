@@ -1,0 +1,28 @@
+@use '../../styles/variables' as *;
+
+.home__page_title {
+    display: block;
+    width: 100%;
+    text-align: center;
+    color: $color-text-brand-gray;
+}
+
+.board__preview_list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    padding: 30px;
+    gap: 30px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+
+    a {
+        text-decoration: none;
+        display: block;
+        min-width: 0;
+    }
+
+    .board__add_button {
+        min-width: 200px;
+        max-height: 40px;
+    }
+}
